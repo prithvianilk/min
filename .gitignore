@@ -1,1 +1,9 @@
+# config
+.vscode/
 .clang-format
+.DS_Store
+
+# build and executables
+obj/
+a.out
+min
