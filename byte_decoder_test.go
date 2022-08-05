@@ -38,7 +38,7 @@ func panicIfIntEqual(buffer []byte, expectedNum int32, t *testing.T) {
 
 func panicIfBitStringNotEqual(buffer []byte, expectedBitString string, t *testing.T) {
 	bd := createNewByteDecoder(buffer)
-	bitString := bd.readBitString()
+	bitString := bd.ReadEncoding()
 	if bitString != expectedBitString {
 		t.Error("Expected", expectedBitString, "got", bitString)
 	}

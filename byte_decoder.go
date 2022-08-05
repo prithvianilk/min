@@ -1,5 +1,7 @@
 package main
 
+import "os"
+
 type ByteDecoder struct {
 	bufferIndex int
 	buffer      []byte
@@ -9,18 +11,23 @@ func createNewByteDecoder(buffer []byte) ByteDecoder {
 	return ByteDecoder{bufferIndex: 0, buffer: buffer}
 }
 
-func (bd *ByteDecoder) Decode() {
-	// encodingMap := bd.getEncodingMap()
-	// fmt.Println(encodingMap)
+func (bd *ByteDecoder) Decode(file *os.File) {
+	encodingMap := bd.getEncodingMap()
+	size := int(bd.readInt32())
+	for i := 0; i < size; i++ {
+		encoding := bd.ReadEncoding()
+		token := string(encodingMap[encoding])
+		file.WriteString(token)
+	}
 }
 
-func (bd *ByteDecoder) getEncodingMap() map[rune]string {
+func (bd *ByteDecoder) getEncodingMap() map[string]rune {
 	len := int(bd.readInt32())
-	encodingMap := make(map[rune]string)
+	encodingMap := make(map[string]rune)
 	for i := 0; i < len; i++ {
 		token := bd.readInt32()
-		encoding := bd.readBitString()
-		encodingMap[token] = encoding
+		encoding := bd.ReadEncoding()
+		encodingMap[encoding] = token
 	}
 	return encodingMap
 }
@@ -35,7 +42,7 @@ func (bd *ByteDecoder) readInt32() int32 {
 	return num
 }
 
-func (bd *ByteDecoder) readBitString() string {
+func (bd *ByteDecoder) ReadEncoding() string {
 	len := int(bd.readInt32())
 	encoding := ""
 	for i := 0; i < len; i++ {

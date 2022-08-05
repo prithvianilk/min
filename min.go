@@ -1,5 +1,9 @@
 package main
 
+import (
+	"os"
+)
+
 func check(err error) {
 	if err != nil {
 		panic(err)
@@ -7,7 +11,15 @@ func check(err error) {
 }
 
 func main() {
-	var h Huffman
-	h.Compress("min.go", "min.zip")
-	h.Decompress("min.zip", "mim2.go")
+	command := os.Args[1]
+	h := Huffman{}
+	if command == "zip" {
+		filepath, zipPath := os.Args[2], os.Args[3]
+		h.Compress(filepath, zipPath)
+	} else if command == "unzip" {
+		zipPath, filepath := os.Args[2], os.Args[3]
+		h.Decompress(zipPath, filepath)
+	} else {
+		panic("Invalid command: " + command)
+	}
 }

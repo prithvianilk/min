@@ -10,26 +10,28 @@ type ByteEncoder struct {
 	file       *os.File
 }
 
-func createNewByteEncoder(zipfpath string) ByteEncoder {
-	file, err := os.Create(zipfpath)
-	check(err)
+func createNewByteEncoder(file *os.File) ByteEncoder {
 	return ByteEncoder{file: file}
 }
 
 func (be *ByteEncoder) WriteInt32(num int32) {
-	intByteSlice := make([]byte, 4)
+	byteSlice := make([]byte, 4)
 	for i := 3; i >= 0; i-- {
 		index := 3 - i
-		intByteSlice[index] = byte(num >> (8 * i))
+		byteSlice[index] = byte(num >> (8 * i))
 	}
-	_, err := be.file.Write(intByteSlice)
+	_, err := be.file.Write(byteSlice)
 	check(err)
 }
 
-func (be *ByteEncoder) WriteEncoding(tokenEncoding TokenEncodingPair) {
-	be.WriteInt32(int32(tokenEncoding.token))
-	be.WriteInt32(int32(len(tokenEncoding.encoding)))
-	for _, bitRune := range tokenEncoding.encoding {
+func (be *ByteEncoder) WriteTokenEncodingPair(token rune, encoding string) {
+	be.WriteInt32(token)
+	be.WriteEncoding(encoding)
+}
+
+func (be *ByteEncoder) WriteEncoding(encoding string) {
+	be.WriteInt32(int32(len(encoding)))
+	for _, bitRune := range encoding {
 		if bitRune == '1' {
 			be.buffer |= (1 << (7 - be.bufferSize))
 		}

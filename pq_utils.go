@@ -19,25 +19,16 @@ func createNewLeaf(token rune, freq int) Node {
 	return createNewNode(token, freq, nil, nil)
 }
 
-type TokenEncodingPair struct {
-	token    rune
-	encoding string
-}
-
-func createNewEncodingPair(token rune, encoding string) TokenEncodingPair {
-	return TokenEncodingPair{token: token, encoding: encoding}
-}
-
-func populateEncodings(node *Node, encoding string, encodings *[]TokenEncodingPair) {
+func populateEncodingMap(node *Node, encoding string, encodingMap map[rune]string) {
 	if node == nil {
 		return
 	}
 	if node.isLeaf() {
-		*encodings = append(*encodings, createNewEncodingPair(node.token, encoding))
+		encodingMap[node.token] = encoding
 		return
 	}
-	populateEncodings(node.left, encoding+"0", encodings)
-	populateEncodings(node.right, encoding+"1", encodings)
+	populateEncodingMap(node.left, encoding+"0", encodingMap)
+	populateEncodingMap(node.right, encoding+"1", encodingMap)
 }
 
 func (node *Node) isLeaf() bool {
