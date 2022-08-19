@@ -8,24 +8,27 @@ import (
 
 const BUFFER_SIZE int = 4 * 1024
 
-type Huffman struct{}
+type Huffman struct {
+	byteEncoder ByteEncoder
+}
 
 func (huffman *Huffman) Compress(fpath, zipfpath string) {
 	freqMap := huffman.getFreqMap(fpath)
 	root := huffman.getTree(freqMap)
-	encodingMap := make(map[rune]string)
+	encodingMap := make(map[byte]string)
 	populateEncodingMap(&root, "", encodingMap)
 	zipFile, err := os.Create(zipfpath)
 	check(err)
-	huffman.writeEncodings(zipFile, encodingMap)
-	huffman.writeEncodedFile(fpath, zipFile, encodingMap)
+	huffman.byteEncoder = createNewByteEncoder(zipFile)
+	huffman.writeEncodings(encodingMap)
+	huffman.writeEncodedFile(fpath, encodingMap)
 }
 
-func (*Huffman) getTree(freqMap map[rune]int) Node {
+func (*Huffman) getTree(freqMap map[byte]int) Node {
 	queue := pq.NewWith(byPriority)
 
 	for token, freq := range freqMap {
-		queue.Enqueue(createNewLeaf(token, freq))
+		queue.Enqueue(createNewLeaf(byte(token), freq))
 	}
 
 	for queue.Size() > 1 {
@@ -40,11 +43,11 @@ func (*Huffman) getTree(freqMap map[rune]int) Node {
 	return root.(Node)
 }
 
-func (*Huffman) getFreqMap(fpath string) map[rune]int {
+func (*Huffman) getFreqMap(fpath string) map[byte]int {
 	file, err := os.Open(fpath)
 	check(err)
 	defer file.Close()
-	freqMap := make(map[rune]int)
+	freqMap := make(map[byte]int)
 	for {
 		buffer := make([]byte, BUFFER_SIZE)
 		n, err := file.Read(buffer)
@@ -52,29 +55,27 @@ func (*Huffman) getFreqMap(fpath string) map[rune]int {
 			break
 		}
 		for index := 0; index < n; index++ {
-			token := rune(buffer[index])
+			token := buffer[index]
 			freqMap[token] += 1
 		}
 	}
 	return freqMap
 }
 
-func (huffman *Huffman) writeEncodings(zipFile *os.File, encodingMap map[rune]string) {
-	byteEncoder := createNewByteEncoder(zipFile)
-	byteEncoder.WriteInt32(int32(len(encodingMap)))
+func (huffman *Huffman) writeEncodings(encodingMap map[byte]string) {
+	huffman.byteEncoder.WriteInt32(int32(len(encodingMap)))
 	for token, encoding := range encodingMap {
-		byteEncoder.WriteTokenEncodingPair(token, encoding)
+		huffman.byteEncoder.WriteTokenEncodingPair(token, encoding)
 	}
 }
 
-func (huffman *Huffman) writeEncodedFile(fpath string, zipFile *os.File, encodingMap map[rune]string) {
+func (huffman *Huffman) writeEncodedFile(fpath string, encodingMap map[byte]string) {
 	file, err := os.Open(fpath)
 	check(err)
 	defer file.Close()
-	byteEncoder := createNewByteEncoder(zipFile)
 	stat, err := os.Stat(fpath)
 	check(err)
-	byteEncoder.WriteInt32(int32(stat.Size()))
+	huffman.byteEncoder.WriteInt32(int32(stat.Size()))
 	for {
 		buffer := make([]byte, BUFFER_SIZE)
 		n, err := file.Read(buffer)
@@ -82,13 +83,10 @@ func (huffman *Huffman) writeEncodedFile(fpath string, zipFile *os.File, encodin
 			break
 		}
 		for i := 0; i < n; i++ {
-			byteEncoder.WriteEncoding(encodingMap[rune(buffer[i])])
+			huffman.byteEncoder.WriteEncoding(encodingMap[buffer[i]])
 		}
 	}
-	byteEncoder.WriteInt32(int32(len(encodingMap)))
-	for token, encoding := range encodingMap {
-		byteEncoder.WriteTokenEncodingPair(token, encoding)
-	}
+	huffman.byteEncoder.Flush()
 }
 
 func (h *Huffman) Decompress(zipfpath, fpath string) {

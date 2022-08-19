@@ -6,29 +6,28 @@ import (
 )
 
 type Node struct {
-	token       rune
+	token       byte
 	freq        int
 	left, right *Node
 }
 
-func createNewNode(token rune, freq int, left *Node, right *Node) Node {
+func createNewNode(token byte, freq int, left *Node, right *Node) Node {
 	return Node{token: token, freq: freq, left: left, right: right}
 }
 
-func createNewLeaf(token rune, freq int) Node {
+func createNewLeaf(token byte, freq int) Node {
 	return createNewNode(token, freq, nil, nil)
 }
 
-func populateEncodingMap(node *Node, encoding string, encodingMap map[rune]string) {
+func populateEncodingMap(node *Node, encoding string, encodingMap map[byte]string) {
 	if node == nil {
 		return
-	}
-	if node.isLeaf() {
+	} else if node.isLeaf() {
 		encodingMap[node.token] = encoding
 		return
 	}
-	populateEncodingMap(node.left, encoding+"0", encodingMap)
-	populateEncodingMap(node.right, encoding+"1", encodingMap)
+	populateEncodingMap(node.left, (encoding + "0"), encodingMap)
+	populateEncodingMap(node.right, (encoding + "1"), encodingMap)
 }
 
 func (node *Node) isLeaf() bool {
