@@ -2,8 +2,8 @@
 
 Experiments in compression algorithms
 
-
 # TODO
 
+- [x] Implement huffman-encoding compression
 - [ ] Document encoding format
-- [ ] Convert rune format from int32 to ASCII (int8). Could involve removing rune and using byte instead.
+- [ ] Read compressed file slice by slice.

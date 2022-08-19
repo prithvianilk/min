@@ -16,7 +16,7 @@ func createNewByteEncoder(file *os.File) ByteEncoder {
 	return ByteEncoder{bufferSize: 0, buffer: 0, file: file}
 }
 
-func (be *ByteEncoder) WriteToken(token byte) {
+func (be *ByteEncoder) writeToken(token byte) {
 	for i := 7; i >= 0; i-- {
 		if (token & (1 << i)) > 0 {
 			be.setCurrentBit()
@@ -32,11 +32,11 @@ func (be *ByteEncoder) setCurrentBit() {
 func (be *ByteEncoder) incrementAndFlushIfFull() {
 	be.bufferSize++
 	if be.bufferSize == MAX_ENCODER_BUFFER_SIZE {
-		be.Flush()
+		be.flush()
 	}
 }
 
-func (be *ByteEncoder) WriteInt32(num int32) {
+func (be *ByteEncoder) writeInt32(num int32) {
 	for i := 31; i >= 0; i-- {
 		if (num & (1 << i)) > 0 {
 			be.setCurrentBit()
@@ -46,12 +46,12 @@ func (be *ByteEncoder) WriteInt32(num int32) {
 }
 
 func (be *ByteEncoder) WriteTokenEncodingPair(token byte, encoding string) {
-	be.WriteToken(token)
-	be.WriteInt32(int32(len(encoding)))
-	be.WriteEncoding(encoding)
+	be.writeToken(token)
+	be.writeInt32(int32(len(encoding)))
+	be.writeEncoding(encoding)
 }
 
-func (be *ByteEncoder) WriteEncoding(encoding string) {
+func (be *ByteEncoder) writeEncoding(encoding string) {
 	for _, bitRune := range encoding {
 		if bitRune == '1' {
 			be.setCurrentBit()
@@ -60,7 +60,7 @@ func (be *ByteEncoder) WriteEncoding(encoding string) {
 	}
 }
 
-func (be *ByteEncoder) Flush() {
+func (be *ByteEncoder) flush() {
 	if be.bufferSize == 0 {
 		return
 	}

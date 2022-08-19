@@ -30,7 +30,7 @@ func TestReadInt32(t *testing.T) {
 
 func panicIfBitStringNotEqual(buffer []byte, expectedBitString string, t *testing.T) {
 	bd := createNewByteDecoder(buffer)
-	bitString := bd.ReadEncodingWithLength()
+	bitString := bd.readEncodingWithLength()
 	if bitString != expectedBitString {
 		t.Error("Expected", expectedBitString, "got", bitString)
 	}
@@ -38,7 +38,7 @@ func panicIfBitStringNotEqual(buffer []byte, expectedBitString string, t *testin
 
 func panicIfIntNotEqual(buffer []byte, expectedNum int32, t *testing.T) {
 	bd := createNewByteDecoder(buffer)
-	num := bd.ReadInt32()
+	num := bd.readInt32()
 	if num != expectedNum {
 		t.Error("Expected", expectedNum, "got", num)
 	}

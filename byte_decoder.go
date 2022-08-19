@@ -14,42 +14,30 @@ type ByteDecoder struct {
 }
 
 func createNewByteDecoder(contents []byte) ByteDecoder {
-	return ByteDecoder{bufferSize: 0, contents: contents, contentsIndex: 0, encodingMap: nil}
+	return ByteDecoder{bufferSize: 0, contents: contents, contentsIndex: 0, encodingMap: make(map[string]byte)}
 }
 
-func (bd *ByteDecoder) Decode(file *os.File) {
-	bd.encodingMap = bd.getEncodingMap()
-	size := int(bd.ReadInt32())
-	for i := 0; i < size; i++ {
-		encoding := bd.ReadEncoding()
+func (bd *ByteDecoder) decodeAndWrite(file *os.File) {
+	bd.getEncodingMap()
+	numberOfEncodings := int(bd.readInt32())
+	for i := 0; i < numberOfEncodings; i++ {
+		encoding := bd.readEncoding()
 		token := string(bd.encodingMap[encoding])
-		file.WriteString(token)
+		_, err := file.WriteString(token)
+		check(err)
 	}
 }
 
-func (bd *ByteDecoder) getEncodingMap() map[string]byte {
-	len := int(bd.ReadInt32())
-	encodingMap := make(map[string]byte)
-	for i := 0; i < len; i++ {
-		token := bd.ReadToken()
-		encoding := bd.ReadEncodingWithLength()
-		encodingMap[encoding] = token
+func (bd *ByteDecoder) getEncodingMap() {
+	encodingMapSize := int(bd.readInt32())
+	for i := 0; i < encodingMapSize; i++ {
+		token := bd.readToken()
+		encoding := bd.readEncodingWithLength()
+		bd.encodingMap[encoding] = token
 	}
-	return encodingMap
 }
 
-func (bd *ByteDecoder) ReadToken() byte {
-	var token byte = 0
-	for i := 7; i >= 0; i-- {
-		if bd.isCurrentBitSet() {
-			token |= (1 << i)
-		}
-		bd.incrementAndResetIfFull()
-	}
-	return token
-}
-
-func (bd *ByteDecoder) ReadInt32() int32 {
+func (bd *ByteDecoder) readInt32() int32 {
 	var num int32 = 0
 	for i := 31; i >= 0; i-- {
 		if bd.isCurrentBitSet() {
@@ -58,37 +46,6 @@ func (bd *ByteDecoder) ReadInt32() int32 {
 		bd.incrementAndResetIfFull()
 	}
 	return num
-}
-
-func (bd *ByteDecoder) ReadEncodingWithLength() string {
-	len := int(bd.ReadInt32())
-	encoding := ""
-	for i := 0; i < len; i++ {
-		if bd.isCurrentBitSet() {
-			encoding += "1"
-		} else {
-			encoding += "0"
-		}
-		bd.incrementAndResetIfFull()
-	}
-	return encoding
-}
-
-func (bd *ByteDecoder) ReadEncoding() string {
-	encoding := ""
-	for {
-		if bd.isCurrentBitSet() {
-			encoding += "1"
-		} else {
-			encoding += "0"
-		}
-		bd.incrementAndResetIfFull()
-		_, isInMap := bd.encodingMap[encoding]
-		if isInMap {
-			break
-		}
-	}
-	return encoding
 }
 
 func (bd *ByteDecoder) isCurrentBitSet() bool {
@@ -110,4 +67,47 @@ func (bd *ByteDecoder) incrementAndResetIfFull() {
 func (bd *ByteDecoder) reset() {
 	bd.bufferSize = 0
 	bd.contentsIndex++
+}
+
+func (bd *ByteDecoder) readToken() byte {
+	var token byte = 0
+	for i := 7; i >= 0; i-- {
+		if bd.isCurrentBitSet() {
+			token |= (1 << i)
+		}
+		bd.incrementAndResetIfFull()
+	}
+	return token
+}
+
+func (bd *ByteDecoder) readEncodingWithLength() string {
+	len := int(bd.readInt32())
+	encoding := ""
+	for i := 0; i < len; i++ {
+		encoding = bd.updateEncoding(encoding)
+	}
+	return encoding
+}
+
+func (bd *ByteDecoder) updateEncoding(encoding string) string {
+	if bd.isCurrentBitSet() {
+		encoding += "1"
+	} else {
+		encoding += "0"
+	}
+	bd.incrementAndResetIfFull()
+	return encoding
+}
+
+func (bd *ByteDecoder) readEncoding() string {
+	encoding := ""
+	for !bd.isValidEncoding(encoding) {
+		encoding = bd.updateEncoding(encoding)
+	}
+	return encoding
+}
+
+func (bd *ByteDecoder) isValidEncoding(encoding string) bool {
+	_, isInMap := bd.encodingMap[encoding]
+	return isInMap
 }
