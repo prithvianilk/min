@@ -14,7 +14,12 @@ type ByteDecoder struct {
 }
 
 func createNewByteDecoder(contents []byte) ByteDecoder {
-	return ByteDecoder{bufferSize: 0, contents: contents, contentsIndex: 0, encodingMap: make(map[string]byte)}
+	return ByteDecoder{
+		bufferSize:    0,
+		contents:      contents,
+		contentsIndex: 0,
+		encodingMap:   make(map[string]byte),
+	}
 }
 
 func (bd *ByteDecoder) decodeAndWrite(file *os.File) {

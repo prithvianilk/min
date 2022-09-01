@@ -12,13 +12,13 @@ func check(err error) {
 
 func main() {
 	command := os.Args[1]
-	h := Huffman{}
 	if command == "zip" {
 		filepath, zipPath := os.Args[2], os.Args[3]
-		h.Compress(filepath, zipPath)
+		encoder := CreateNewHuffmanEncoder(filepath, zipPath)
+		encoder.Compress()
 	} else if command == "unzip" {
 		zipPath, filepath := os.Args[2], os.Args[3]
-		h.Decompress(zipPath, filepath)
+		Decompress(zipPath, filepath)
 	} else {
 		panic("Invalid command: " + command)
 	}
